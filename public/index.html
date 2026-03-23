@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Unserviceable ICT Equipment Database Management System - Track and manage unserviceable ICT equipment records.">
+    <title>UICT — Unserviceable ICT Equipment Database</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css?v=5">
+</head>
+<body>
+
+    <!-- ═══════════════════ LOGIN VIEW ═══════════════════ -->
+    <div id="login-view" class="view active">
+        <div class="login-wrapper">
+            <div class="login-glow"></div>
+            <div class="login-card glass">
+                <div class="login-header">
+                    <div class="login-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                        </svg>
+                    </div>
+                    <h1>UICT</h1>
+                    <p class="login-subtitle">Unserviceable ICT Equipment Database</p>
+                </div>
+                <form id="login-form" autocomplete="off">
+                    <div class="form-group">
+                        <label for="login-username">Username</label>
+                        <input type="text" id="login-username" placeholder="Enter your username" required autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" placeholder="Enter your password" required>
+                    </div>
+                    <div id="login-error" class="form-error" hidden></div>
+                    <button type="submit" id="login-btn" class="btn btn-primary btn-full">
+                        <span class="btn-text">Sign In</span>
+                        <span class="btn-loader" hidden></span>
+                    </button>
+                </form>
+                <p class="login-footer">Authorized IT Personnel Only</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ DASHBOARD VIEW ═══════════════════ -->
+    <div id="dashboard-view" class="view">
+
+        <!-- Top Navbar -->
+        <header class="navbar glass">
+            <div class="navbar-brand">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+                <span>UICT Dashboard</span>
+            </div>
+            <div class="navbar-actions">
+                <span id="navbar-user" class="navbar-user">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    <span id="navbar-username">Admin</span>
+                </span>
+                <button id="logout-btn" class="btn btn-ghost btn-sm" title="Sign out">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Sign Out
+                </button>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tab-bar glass">
+            <button class="tab active" data-tab="overview" id="tab-overview">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Overview
+            </button>
+            <button class="tab" data-tab="equipment" id="tab-equipment">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                Equipment
+            </button>
+
+            <button class="tab" data-tab="reports" id="tab-reports">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                Reports
+            </button>
+        </nav>
+
+        <!-- Content Area -->
+        <main class="main-content">
+
+            <!-- ── OVERVIEW TAB ── -->
+            <section id="panel-overview" class="panel active">
+                <div class="stats-grid">
+                    <div class="stat-card glass" id="stat-total">
+                        <div class="stat-icon stat-icon-total">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-total-value">0</span>
+                            <span class="stat-label">Total Equipment</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass" id="stat-types">
+                        <div class="stat-icon stat-icon-type">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-types-value">0</span>
+                            <span class="stat-label">Equipment Types</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass" id="stat-locations">
+                        <div class="stat-icon stat-icon-location">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-locations-value">0</span>
+                            <span class="stat-label">Locations</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass" id="stat-brands">
+                        <div class="stat-icon stat-icon-brand">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-brands-value">0</span>
+                            <span class="stat-label">Brands</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overview-grid">
+                    <div class="overview-card glass">
+                        <h3>Equipment by Type</h3>
+                        <div id="chart-types" class="bar-chart-container"></div>
+                    </div>
+                    <div class="overview-card glass">
+                        <h3>Equipment by Location</h3>
+                        <div id="chart-locations" class="bar-chart-container"></div>
+                    </div>
+                </div>
+
+                <div class="overview-card glass full-width">
+                    <h3>Recently Added</h3>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead><tr>
+                                <th>Type</th><th>Brand</th><th>Model</th>
+                                <th>Serial No.</th><th>MR To</th><th>Location</th><th>Date</th>
+                            </tr></thead>
+                            <tbody id="recent-table-body">
+                                <tr><td colspan="7" class="table-empty">No records yet</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ── EQUIPMENT TAB ── -->
+            <section id="panel-equipment" class="panel">
+                <div class="panel-header">
+                    <h2>Equipment Registry</h2>
+                    <button class="btn btn-primary btn-sm" id="btn-goto-add">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Add New
+                    </button>
+                    <button class="btn btn-ghost btn-sm" id="btn-import-excel">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Import Excel
+                    </button>
+                </div>
+
+                <!-- Search & Filter Bar -->
+                <div class="filter-bar glass">
+                    <div class="search-box">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="search-input" placeholder="Search equipment...">
+                    </div>
+                    <div class="filter-group">
+                        <select id="filter-type"><option value="">All Types</option></select>
+                        <select id="filter-brand"><option value="">All Brands</option></select>
+                        <select id="filter-location"><option value="">All Locations</option></select>
+                        <select id="filter-mr"><option value="">All Personnel</option></select>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" id="btn-clear-filters" title="Clear filters">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        Clear
+                    </button>
+                </div>
+
+                <!-- Equipment Table -->
+                <div class="table-wrapper">
+                    <table class="data-table" id="equipment-table">
+                        <thead><tr>
+                            <th class="th-sortable" data-sort="equipment_type">Type</th>
+                            <th class="th-sortable" data-sort="brand">Brand</th>
+                            <th class="th-sortable" data-sort="model">Model</th>
+                            <th class="th-sortable" data-sort="serial_number">Serial No.</th>
+                            <th class="th-sortable" data-sort="mr_to">MR To</th>
+                            <th class="th-sortable" data-sort="date_unserviceable">Date</th>
+                            <th class="th-sortable" data-sort="location">Location</th>
+                            <th>Actions</th>
+                        </tr></thead>
+                        <tbody id="equipment-table-body">
+                            <tr><td colspan="8" class="table-empty">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pagination"></div>
+            </section>
+
+    <!-- ── ADD / EDIT EQUIPMENT MODAL ── -->
+    <div id="equipment-modal-overlay" class="modal-overlay">
+        <div class="modal glass equipment-modal">
+            <div class="modal-header">
+                <h3 id="form-title">Add New Equipment</h3>
+                <button type="button" class="modal-close" id="equipment-modal-close">&times;</button>
+            </div>
+            <div class="modal-body-form">
+                <form id="equipment-form" class="equipment-form" autocomplete="off">
+                    <input type="hidden" id="eq-id">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="eq-type">Equipment Type <span class="required">*</span></label>
+                            <input type="text" id="eq-type" placeholder="e.g. Laptop, Printer, Monitor" required list="type-suggestions">
+                            <datalist id="type-suggestions"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="eq-brand">Brand <span class="required">*</span></label>
+                            <input type="text" id="eq-brand" placeholder="e.g. Dell, HP, Lenovo" required list="brand-suggestions">
+                            <datalist id="brand-suggestions"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="eq-model">Model <span class="required">*</span></label>
+                            <input type="text" id="eq-model" placeholder="e.g. ThinkPad T480" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="eq-serial">Serial Number <span class="required">*</span></label>
+                            <input type="text" id="eq-serial" placeholder="e.g. SN-2024-001" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="eq-mr">MR To (Person Accountable) <span class="required">*</span></label>
+                            <input type="text" id="eq-mr" placeholder="e.g. Juan Dela Cruz" required list="mr-suggestions">
+                            <datalist id="mr-suggestions"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="eq-date">Date Declared Unserviceable <span class="required">*</span></label>
+                            <input type="date" id="eq-date" required>
+                        </div>
+                        <div class="form-group full-span">
+                            <label for="eq-location">Location (Division / Field Office) <span class="required">*</span></label>
+                            <input type="text" id="eq-location" placeholder="e.g. Admin Division, Quezon City FO" required list="loc-suggestions">
+                            <datalist id="loc-suggestions"></datalist>
+                        </div>
+                        <div class="form-group full-span">
+                            <label for="eq-remarks">Remarks</label>
+                            <textarea id="eq-remarks" rows="3" placeholder="Optional notes about the equipment condition, disposal status, etc."></textarea>
+                        </div>
+                    </div>
+                    <div id="form-error" class="form-error" hidden></div>
+                    <div class="form-actions">
+                        <button type="button" id="btn-form-cancel" class="btn btn-ghost">Cancel</button>
+                        <button type="submit" id="btn-form-submit" class="btn btn-primary">
+                            <span class="btn-text">Save Equipment</span>
+                            <span class="btn-loader" hidden></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+            <!-- ── REPORTS TAB ── -->
+            <section id="panel-reports" class="panel">
+                <div class="panel-header">
+                    <h2>Report Generation</h2>
+                </div>
+                <div class="reports-grid">
+                    <div class="report-card glass">
+                        <div class="report-icon report-icon-csv">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        </div>
+                        <h3>CSV Report</h3>
+                        <p>Export equipment data as a CSV spreadsheet file. Compatible with Excel, Google Sheets, and other tools.</p>
+                        <div class="report-filters">
+                            <label>Optional: filter before export</label>
+                            <select id="report-csv-filter-type"><option value="">All Types</option></select>
+                            <select id="report-csv-filter-location"><option value="">All Locations</option></select>
+                            <input type="text" id="report-csv-filter-mr" placeholder="Filter by Person (MR To)">
+                        </div>
+                        <button class="btn btn-primary" id="btn-export-csv">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download CSV
+                        </button>
+                    </div>
+                    <div class="report-card glass">
+                        <div class="report-icon report-icon-pdf">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h2a1 1 0 0 0 0-2H9v5"/><path d="M15 11h1a2 2 0 0 1 0 4h-1v-4z"/></svg>
+                        </div>
+                        <h3>PDF Report</h3>
+                        <p>Generate a formatted PDF document with all equipment records. Ready for printing and official documentation.</p>
+                        <div class="report-filters">
+                            <label>Optional: filter before export</label>
+                            <select id="report-pdf-filter-type"><option value="">All Types</option></select>
+                            <select id="report-pdf-filter-location"><option value="">All Locations</option></select>
+                            <input type="text" id="report-pdf-filter-mr" placeholder="Filter by Person (MR To)">
+                        </div>
+                        <button class="btn btn-primary" id="btn-export-pdf">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download PDF
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ═══════════════════ MODAL ═══════════════════ -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal glass">
+            <div class="modal-header">
+                <h3 id="modal-title">Confirm</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">Are you sure?</div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="modal-cancel">Cancel</button>
+                <button class="btn btn-danger" id="modal-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════ IMPORT MODAL ═══════════════════ -->
+    <div id="import-modal-overlay" class="modal-overlay">
+        <div class="modal glass import-modal">
+            <div class="modal-header">
+                <h3>Import from Excel</h3>
+                <button class="modal-close" id="import-modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:1rem;line-height:1.5;">Upload a <strong>.xlsx</strong> file with the following column headers:<br>
+                    <code>Equipment Type</code>, <code>Brand</code>, <code>Model</code>, <code>Serial Number</code>,
+                    <code>MR To</code>, <code>Date Declared Unserviceable</code>, <code>Location</code>, <code>Remarks</code>
+                </p>
+                <div class="import-dropzone" id="import-dropzone">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--accent);margin-bottom:0.5rem;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span id="import-file-label">Drag & drop or click to select a file</span>
+                    <input type="file" id="import-file-input" accept=".xlsx" hidden>
+                </div>
+                <div id="import-result" hidden style="margin-top:1rem;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" id="import-modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="import-upload-btn" disabled>
+                    <span class="btn-text">Upload & Import</span>
+                    <span class="btn-loader" hidden></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-container"></div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
