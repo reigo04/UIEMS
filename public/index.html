@@ -161,14 +161,25 @@
             <section id="panel-equipment" class="panel">
                 <div class="panel-header">
                     <h2>Equipment Registry</h2>
-                    <button class="btn btn-primary btn-sm" id="btn-goto-add">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Add New
-                    </button>
-                    <button class="btn btn-ghost btn-sm" id="btn-import-excel">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                        Import Excel
-                    </button>
+                    <div class="panel-header-actions">
+                        <button class="btn btn-primary btn-sm" id="btn-goto-add">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Add New
+                        </button>
+                        <button class="btn btn-ghost btn-sm" id="btn-import-excel">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Import Excel
+                        </button>
+                        <button class="btn btn-ghost btn-sm" id="btn-toggle-select" title="Toggle multi-select mode">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                            Select
+                        </button>
+                        <button class="btn btn-danger btn-sm" id="btn-delete-selected" hidden>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            <span class="btn-text">Delete Selected (<span id="selected-count">0</span>)</span>
+                            <span class="btn-loader" hidden></span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Search & Filter Bar -->
@@ -193,6 +204,7 @@
                 <div class="table-wrapper">
                     <table class="data-table" id="equipment-table">
                         <thead><tr>
+                            <th class="th-checkbox" id="th-select-all" hidden><input type="checkbox" id="select-all-checkbox" title="Select all"></th>
                             <th class="th-sortable" data-sort="equipment_type">Type</th>
                             <th class="th-sortable" data-sort="brand">Brand</th>
                             <th class="th-sortable" data-sort="model">Model</th>

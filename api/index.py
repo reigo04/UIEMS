@@ -50,13 +50,13 @@ class Admin(Base):
 class Equipment(Base):
     __tablename__ = "equipment"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    equipment_type = Column(String(120), nullable=False)
-    brand = Column(String(120), nullable=False)
-    model = Column(String(120), nullable=False)
-    serial_number = Column(String(120), unique=True, nullable=False)
-    mr_to = Column(String(200), nullable=False)
-    date_unserviceable = Column(Date, nullable=False)
-    location = Column(String(200), nullable=False)
+    equipment_type = Column(String(120), nullable=True, default="")
+    brand = Column(String(120), nullable=True, default="")
+    model = Column(String(120), nullable=True, default="")
+    serial_number = Column(String(120), unique=True, nullable=True)
+    mr_to = Column(String(200), nullable=True, default="")
+    date_unserviceable = Column(Date, nullable=True)
+    location = Column(String(200), nullable=True, default="")
     remarks = Column(Text, default="")
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -70,7 +70,7 @@ class Equipment(Base):
             "equipment_type": self.equipment_type,
             "brand": self.brand,
             "model": self.model,
-            "serial_number": self.serial_number,
+            "serial_number": self.serial_number or "",
             "mr_to": self.mr_to,
             "date_unserviceable": self.date_unserviceable.isoformat() if self.date_unserviceable is not None else None,
             "location": self.location,
@@ -82,6 +82,63 @@ class Equipment(Base):
 
 # Create tables & seed default admin
 Base.metadata.create_all(engine)
+
+
+def _migrate_db():
+    """Ensure existing SQLite columns allow NULLs where the model says nullable=True.
+
+    SQLAlchemy's create_all() won't ALTER existing columns, so we recreate the
+    table with the correct schema if any NOT-NULL columns need to become nullable.
+    This is safe and idempotent — data is preserved.
+    """
+    if not DATABASE_URL.startswith("sqlite"):
+        return
+    import sqlite3, pathlib
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    # Resolve relative path from api directory
+    if not os.path.isabs(db_path):
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), db_path)
+    if not os.path.exists(db_path):
+        return
+    con = sqlite3.connect(db_path)
+    cur = con.cursor()
+    # Check current column info
+    cur.execute("PRAGMA table_info(equipment)")
+    cols = {row[1]: row for row in cur.fetchall()}  # name -> (cid, name, type, notnull, dflt, pk)
+    needs_migration = False
+    for col_name in ("serial_number", "date_unserviceable", "mr_to", "location", "equipment_type", "brand", "model"):
+        if col_name in cols and cols[col_name][3] == 1:  # notnull == 1
+            needs_migration = True
+            break
+    if not needs_migration:
+        con.close()
+        return
+    # Recreate table with correct schema
+    cur.executescript("""
+        BEGIN;
+        CREATE TABLE IF NOT EXISTS equipment_backup AS SELECT * FROM equipment;
+        DROP TABLE equipment;
+    """)
+    con.commit()
+    con.close()
+    # Let SQLAlchemy recreate with the correct schema
+    Base.metadata.create_all(engine)
+    # Copy data back
+    con = sqlite3.connect(db_path)
+    cur = con.cursor()
+    cur.execute("""
+        INSERT INTO equipment (id, equipment_type, brand, model, serial_number,
+            mr_to, date_unserviceable, location, remarks, created_at, updated_at)
+        SELECT id, equipment_type, brand, model, serial_number,
+            mr_to, date_unserviceable, location, remarks, created_at, updated_at
+        FROM equipment_backup
+    """)
+    cur.execute("DROP TABLE equipment_backup")
+    con.commit()
+    con.close()
+
+_migrate_db()
+
 
 def _seed_admin():
     db = SessionLocal()
@@ -284,22 +341,23 @@ def get_equipment(eid):
 @login_required
 def create_equipment():
     data = request.get_json(silent=True) or {}
-    required = ["equipment_type", "brand", "model", "serial_number", "mr_to", "date_unserviceable", "location"]
-    missing = [f for f in required if not data.get(f, "").strip()]
+    required = []
+    missing = []
     if missing:
         return jsonify({"error": f"Missing required fields: {', '.join(missing)}"}), 400
 
     db = SessionLocal()
     try:
-        # Check duplicate serial
-        if db.query(Equipment).filter_by(serial_number=data["serial_number"].strip()).first():
+        # Check duplicate serial (only if serial is provided)
+        serial_val = data.get("serial_number", "").strip() or None
+        if serial_val and db.query(Equipment).filter_by(serial_number=serial_val).first():
             return jsonify({"error": "Serial number already exists"}), 409
 
         eq = Equipment(
             equipment_type=data["equipment_type"].strip(),
             brand=data["brand"].strip(),
             model=data["model"].strip(),
-            serial_number=data["serial_number"].strip(),
+            serial_number=serial_val,
             mr_to=data["mr_to"].strip(),
             date_unserviceable=date.fromisoformat(data["date_unserviceable"]),
             location=data["location"].strip(),
@@ -338,11 +396,15 @@ def update_equipment(eid):
             if db.query(Equipment).filter(Equipment.serial_number == new_serial, Equipment.id != eid).first():
                 return jsonify({"error": "Serial number already exists"}), 409
 
-        for field in ["equipment_type", "brand", "model", "serial_number", "mr_to", "location", "remarks"]:
+        for field in ["equipment_type", "brand", "model", "mr_to", "location", "remarks"]:
             if field in data:
                 val = data.get(field)
                 if isinstance(val, str):
                     setattr(eq, field, val.strip())
+
+        if "serial_number" in data:
+            sn = data.get("serial_number", "")
+            eq.serial_number = cast(Any, sn.strip() if isinstance(sn, str) and sn.strip() else None)
 
         if "date_unserviceable" in data:
             date_val = data.get("date_unserviceable")
@@ -370,6 +432,24 @@ def delete_equipment(eid):
         db.delete(eq)
         db.commit()
         return jsonify({"message": "Equipment deleted"})
+    finally:
+        db.close()
+
+
+@app.route("/api/equipment/bulk-delete", methods=["POST"])
+@login_required
+def bulk_delete_equipment():
+    """Delete multiple equipment records by ID list."""
+    data = request.get_json(silent=True) or {}
+    ids = data.get("ids", [])
+    if not isinstance(ids, list) or not ids:
+        return jsonify({"error": "A non-empty list of IDs is required"}), 400
+
+    db = SessionLocal()
+    try:
+        deleted = db.query(Equipment).filter(Equipment.id.in_(ids)).delete(synchronize_session="fetch")
+        db.commit()
+        return jsonify({"message": f"{deleted} equipment record(s) deleted", "deleted": deleted})
     finally:
         db.close()
 
@@ -586,20 +666,18 @@ def import_equipment():
                     col_map[field] = idx
                     break
 
-        required_fields = ["equipment_type", "brand", "model", "serial_number", "mr_to", "date_unserviceable", "location"]
+        # We don't strictly require any columns anymore. 
+        # Missing columns will just be populated with empty strings.
+        required_fields = []
         missing = [f for f in required_fields if f not in col_map]
         if missing:
             friendly = {
                 "equipment_type": "Equipment Type",
                 "brand": "Brand",
                 "model": "Model",
-                "serial_number": "Serial Number",
-                "mr_to": "MR To",
-                "date_unserviceable": "Date Unserviceable",
-                "location": "Location",
             }
             names = [friendly.get(m, m) for m in missing]
-            return jsonify({"error": f"Missing required columns: {', '.join(names)}"}), 400
+            return jsonify({"error": f"The Excel file is missing essential columns: {', '.join(names)}"}), 400
 
         db = SessionLocal()
         try:
@@ -616,36 +694,39 @@ def import_equipment():
                         val = row[idx]
                         return str(val).strip() if val is not None else ""
 
-                    serial = cell("serial_number")
-                    if not serial:
-                        errors_list.append(f"Row {row_num}: Empty serial number, skipped")
-                        skipped += 1
+                    # Skip completely blank rows silently
+                    if all((v is None or str(v).strip() == "") for v in row):
                         continue
 
-                    # Skip duplicates
-                    if db.query(Equipment).filter_by(serial_number=serial).first():
+                    serial = cell("serial_number") or None
+
+                    # Skip duplicates (only for non-empty serial numbers)
+                    if serial and db.query(Equipment).filter_by(serial_number=serial).first():
                         skipped += 1
                         continue
 
                     date_str = cell("date_unserviceable")
                     parsed_date = None
                     if date_str:
-                        # Try ISO format first
-                        for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y", "%m-%d-%Y", "%B %d, %Y"):
-                            try:
-                                parsed_date = datetime.strptime(date_str, fmt).date()
-                                break
-                            except ValueError:
-                                continue
-                        # openpyxl may return a datetime object directly
-                        if parsed_date is None:
-                            cell_val = row[col_map["date_unserviceable"]]
-                            if hasattr(cell_val, "date"):
-                                parsed_date = cell_val.date()
-                            elif hasattr(cell_val, "year"):
-                                parsed_date = date(cell_val.year, cell_val.month, cell_val.day)
+                        # openpyxl may return a datetime object directly — check first
+                        cell_val = row[col_map["date_unserviceable"]]
+                        if hasattr(cell_val, "date"):
+                            parsed_date = cell_val.date()
+                        elif hasattr(cell_val, "year"):
+                            parsed_date = date(cell_val.year, cell_val.month, cell_val.day)
 
-                    if parsed_date is None:
+                        # Fall back to string parsing
+                        if parsed_date is None:
+                            for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y", "%m-%d-%Y",
+                                        "%m/%d/%y", "%d/%m/%y", "%m-%d-%y",
+                                        "%B %d, %Y", "%b %d, %Y"):
+                                try:
+                                    parsed_date = datetime.strptime(date_str, fmt).date()
+                                    break
+                                except ValueError:
+                                    continue
+
+                    if parsed_date is None and date_str:
                         errors_list.append(f"Row {row_num}: Invalid date '{date_str}', skipped")
                         skipped += 1
                         continue
@@ -663,6 +744,7 @@ def import_equipment():
                     db.add(eq)
                     added += 1
                 except Exception as row_err:
+                    db.rollback()
                     errors_list.append(f"Row {row_num}: {str(row_err)}")
                     skipped += 1
 

@@ -30,6 +30,11 @@
     let editingId = null;
     let deleteTargetId = null;
 
+    // Multi-select state
+    let selectMode = false;
+    let selectedIds = new Set();
+    let currentPageItems = [];
+
     // ── API Helper ──
     async function api(url, opts = {}) {
         const defaults = {
@@ -226,12 +231,19 @@
     }
 
     function renderEquipmentTable(items) {
+        currentPageItems = items;
         const tbody = $("#equipment-table-body");
+        const colSpan = selectMode ? 9 : 8;
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="table-empty">No equipment found</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="${colSpan}" class="table-empty">No equipment found</td></tr>`;
+            updateSelectAllCheckbox();
             return;
         }
-        tbody.innerHTML = items.map(eq => `<tr>
+        tbody.innerHTML = items.map(eq => {
+            const checked = selectedIds.has(eq.id) ? "checked" : "";
+            const rowClass = selectedIds.has(eq.id) ? "row-selected" : "";
+            return `<tr class="${rowClass}">
+            ${selectMode ? `<td class="td-checkbox"><input type="checkbox" class="row-checkbox" data-id="${eq.id}" ${checked} onchange="UICT.toggleRow(${eq.id}, this.checked)"></td>` : ""}
             <td>${esc(eq.equipment_type)}</td>
             <td>${esc(eq.brand)}</td>
             <td>${esc(eq.model)}</td>
@@ -249,7 +261,9 @@
                     </button>
                 </div>
             </td>
-        </tr>`).join("");
+        </tr>`;
+        }).join("");
+        updateSelectAllCheckbox();
     }
 
     function renderPagination(data) {
@@ -457,24 +471,105 @@
     });
 
     // ═══════════════════════════════════════
-    // DELETE MODAL
+    // MULTI-SELECT MODE
+    // ═══════════════════════════════════════
+
+    const toggleSelectBtn   = $("#btn-toggle-select");
+    const deleteSelectedBtn = $("#btn-delete-selected");
+    const selectedCountEl   = $("#selected-count");
+    const thSelectAll       = $("#th-select-all");
+    const selectAllCheckbox = $("#select-all-checkbox");
+
+    function toggleSelectMode() {
+        selectMode = !selectMode;
+        selectedIds.clear();
+        toggleSelectBtn.classList.toggle("active", selectMode);
+        deleteSelectedBtn.hidden = !selectMode;
+        thSelectAll.hidden = !selectMode;
+        updateSelectedCount();
+        // Re-render table with/without checkboxes
+        renderEquipmentTable(currentPageItems);
+    }
+
+    function toggleRow(id, checked) {
+        if (checked) {
+            selectedIds.add(id);
+        } else {
+            selectedIds.delete(id);
+        }
+        // Highlight row
+        const row = document.querySelector(`.row-checkbox[data-id="${id}"]`);
+        if (row) row.closest("tr").classList.toggle("row-selected", checked);
+        updateSelectedCount();
+        updateSelectAllCheckbox();
+    }
+
+    function updateSelectedCount() {
+        selectedCountEl.textContent = selectedIds.size;
+        deleteSelectedBtn.disabled = selectedIds.size === 0;
+    }
+
+    function updateSelectAllCheckbox() {
+        if (!selectMode) return;
+        const checkboxes = $$("input.row-checkbox");
+        if (!checkboxes.length) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+            return;
+        }
+        const checkedCount = checkboxes.filter(cb => cb.checked).length;
+        selectAllCheckbox.checked = checkedCount === checkboxes.length;
+        selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+    }
+
+    toggleSelectBtn.addEventListener("click", toggleSelectMode);
+
+    selectAllCheckbox.addEventListener("change", () => {
+        const checked = selectAllCheckbox.checked;
+        $$("input.row-checkbox").forEach(cb => {
+            const id = parseInt(cb.dataset.id, 10);
+            cb.checked = checked;
+            if (checked) selectedIds.add(id); else selectedIds.delete(id);
+            cb.closest("tr").classList.toggle("row-selected", checked);
+        });
+        updateSelectedCount();
+    });
+
+    // ═══════════════════════════════════════
+    // DELETE MODAL (single & bulk)
     // ═══════════════════════════════════════
 
     const modalOverlay = $("#modal-overlay");
     const modalTitle   = $("#modal-title");
     const modalBody    = $("#modal-body");
     const modalConfirm = $("#modal-confirm");
+    let bulkDeleteMode = false;
 
     function openDeleteModal(id, serial) {
         deleteTargetId = id;
+        bulkDeleteMode = false;
         modalTitle.textContent = "Delete Equipment";
         modalBody.innerHTML = `Are you sure you want to delete equipment with serial number <strong>${esc(serial)}</strong>? This action cannot be undone.`;
+        modalConfirm.textContent = "Delete";
         modalOverlay.classList.add("visible");
     }
+
+    function openBulkDeleteModal() {
+        if (selectedIds.size === 0) return;
+        bulkDeleteMode = true;
+        deleteTargetId = null;
+        modalTitle.textContent = "Delete Multiple Equipment";
+        modalBody.innerHTML = `Are you sure you want to delete <strong>${selectedIds.size}</strong> selected equipment record(s)? This action cannot be undone.`;
+        modalConfirm.textContent = `Delete ${selectedIds.size} Items`;
+        modalOverlay.classList.add("visible");
+    }
+
+    deleteSelectedBtn.addEventListener("click", openBulkDeleteModal);
 
     function closeModal() {
         modalOverlay.classList.remove("visible");
         deleteTargetId = null;
+        bulkDeleteMode = false;
     }
 
     $("#modal-close").addEventListener("click", closeModal);
@@ -484,15 +579,35 @@
     });
 
     modalConfirm.addEventListener("click", async () => {
-        if (!deleteTargetId) return;
-        try {
-            await api(`/api/equipment/${deleteTargetId}`, { method: "DELETE" });
-            toast("Equipment deleted", "success");
-            closeModal();
-            loadFilterOptions();
-            loadEquipment();
-        } catch (err) {
-            toast(err.message, "error");
+        if (bulkDeleteMode) {
+            if (selectedIds.size === 0) return;
+            try {
+                const data = await api("/api/equipment/bulk-delete", {
+                    method: "POST",
+                    body: JSON.stringify({ ids: [...selectedIds] }),
+                });
+                toast(data.message, "success");
+                selectedIds.clear();
+                updateSelectedCount();
+                closeModal();
+                loadFilterOptions();
+                loadEquipment();
+            } catch (err) {
+                toast(err.message, "error");
+            }
+        } else {
+            if (!deleteTargetId) return;
+            try {
+                await api(`/api/equipment/${deleteTargetId}`, { method: "DELETE" });
+                toast("Equipment deleted", "success");
+                selectedIds.delete(deleteTargetId);
+                updateSelectedCount();
+                closeModal();
+                loadFilterOptions();
+                loadEquipment();
+            } catch (err) {
+                toast(err.message, "error");
+            }
         }
     });
 
@@ -671,6 +786,7 @@
         editItem: (id) => loadEditForm(id),
         deleteItem: (id, serial) => openDeleteModal(id, serial),
         goPage: (page) => { currentPage = page; loadEquipment(); },
+        toggleRow: (id, checked) => toggleRow(id, checked),
     };
 
     // ── Boot ──

@@ -505,6 +505,50 @@ textarea { resize: vertical; min-height: 80px; }
 .td-actions { display: flex; gap: 0.3rem; }
 
 /* ═════════════════════════════════════════
+   MULTI-SELECT MODE
+   ═════════════════════════════════════════ */
+
+.panel-header-actions {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+}
+
+#btn-toggle-select.active {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.th-checkbox,
+.td-checkbox {
+    width: 40px;
+    text-align: center;
+    padding-left: 0.6rem !important;
+    padding-right: 0.2rem !important;
+}
+
+.th-checkbox input[type="checkbox"],
+.td-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+.data-table tbody tr.row-selected {
+    background: rgba(20, 184, 166, 0.1) !important;
+}
+.data-table tbody tr.row-selected:hover {
+    background: rgba(20, 184, 166, 0.15) !important;
+}
+
+#btn-delete-selected:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ═════════════════════════════════════════
    PAGINATION
    ═════════════════════════════════════════ */
 
