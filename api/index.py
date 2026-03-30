@@ -553,13 +553,13 @@ def export_pdf():
         for i, eq in enumerate(items, 1):
             data.append([
                 str(i),
-                Paragraph(eq.equipment_type, cell_style),
-                Paragraph(eq.brand, cell_style),
-                Paragraph(eq.model, cell_style),
-                Paragraph(eq.serial_number, cell_style),
-                Paragraph(eq.mr_to, cell_style),
+                Paragraph(eq.equipment_type or "", cell_style),
+                Paragraph(eq.brand or "", cell_style),
+                Paragraph(eq.model or "", cell_style),
+                Paragraph(eq.serial_number or "", cell_style),
+                Paragraph(eq.mr_to or "", cell_style),
                 eq.date_unserviceable.strftime("%Y-%m-%d") if eq.date_unserviceable is not None else "",
-                Paragraph(eq.location, cell_style),
+                Paragraph(eq.location or "", cell_style),
                 Paragraph(eq.remarks or "", cell_style),
             ])
 
